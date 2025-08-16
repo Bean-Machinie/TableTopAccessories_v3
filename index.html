@@ -21,11 +21,9 @@
 
   <main class="layout">
     <aside class="sidebar">
-      <h2>Panels</h2>
+      <h2>Tools</h2>
       <nav>
-        <button class="nav-btn active" data-panel="grid">Grid Designer</button>
-        <button class="nav-btn" data-panel="background">Background</button>
-        <button class="nav-btn" data-panel="session">Session</button>
+        <button class="nav-btn active" data-panel="workflow">Workflow</button>
       </nav>
     </aside>
 
@@ -33,13 +31,14 @@
       <div class="canvas-wrap">
         <canvas id="board" width="1123" height="794" aria-label="Canvas Workspace"></canvas>
       </div>
-      <div id="breadcrumbs" class="breadcrumbs">Home ▸ <span id="crumb">Grid</span></div>
+      <div id="breadcrumbs" class="breadcrumbs">Home ▸ <span id="crumb">Workflow</span></div>
     </section>
 
     <aside class="props">
-      <!-- Grid Panel -->
-      <div class="panel" id="panel-grid">
-        <h3>Grid Designer</h3>
+      <!-- Unified Workflow Panel -->
+      <div class="panel" id="panel-workflow">
+        <h3>Workflow</h3>
+        <h4>Grid</h4>
         <label class="row">
           <span>Page Size</span>
           <select id="pagePreset">
@@ -63,11 +62,11 @@
 
         <div class="divider"></div>
 
-        <label class="row">
+        <div class="row three">
           <span>Margins (mm)</span>
           <input type="number" id="marginAll" min="0" max="50" step="0.5" value="10">
           <button id="toggleMargins" class="ghost" aria-expanded="false">Advanced ▸</button>
-        </label>
+        </div>
         <div class="row four collapse" id="marginAdvanced" hidden>
           <label><span>Top</span><input type="number" id="mTop" min="0" max="50" step="0.5"></label>
           <label><span>Right</span><input type="number" id="mRight" min="0" max="50" step="0.5"></label>
@@ -131,11 +130,10 @@
 
         <div class="divider"></div>
         <button id="btnRedraw">Redraw</button>
-      </div>
 
-      <!-- Background Panel -->
-      <div class="panel hidden" id="panel-background">
-        <h3>Background</h3>
+        <div class="divider"></div>
+
+        <h4>Background</h4>
         <div class="row">
           <input type="file" id="bgFile" accept="image/*">
         </div>
@@ -144,18 +142,22 @@
             <span>Opacity</span>
             <input type="range" id="bgAlpha" min="0" max="1" step="0.05" value="0.8">
           </label>
-          <label>
+          <label class="scale-control">
             <span>Scale (%)</span>
+            <input type="range" id="bgScaleRange" min="10" max="400" step="1" value="100">
             <input type="number" id="bgScale" min="10" max="400" step="1" value="100">
           </label>
         </div>
-        <p class="hint">Tip: Drag the image on the canvas to reposition it.</p>
+        <div class="row two">
+          <button id="bgRotateLeft">⟲</button>
+          <button id="bgRotateRight">⟳</button>
+        </div>
+        <p class="hint">Tip: Drag the image on the canvas to reposition it. Use the mouse wheel to scale.</p>
         <button id="bgReset">Center Image</button>
-      </div>
 
-      <!-- Session Panel -->
-      <div class="panel hidden" id="panel-session">
-        <h3>Session</h3>
+        <div class="divider"></div>
+
+        <h4>Session</h4>
         <p>Autosave is on. Your settings and layout persist in this browser.</p>
         <div class="row">
           <label>

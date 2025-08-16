@@ -16,7 +16,7 @@ const defaultState = {
   gridType: "hex",
   hex: { sizeMm: 10, orient: "pointy", lineWidth: 0.8, alpha: 0.6 },
   square: { sizeMm: 10, lineWidth: 0.8, alpha: 0.6 },
-  bg: { src: null, x: 0, y: 0, scale: 1.0, alpha: 0.8 },
+  bg: { src: null, x: 0, y: 0, scale: 1.0, alpha: 0.8, rotation: 0 },
 };
 
 let state = loadState();
@@ -51,6 +51,9 @@ const sqLineAlpha = $("#sqLineAlpha");
 const bgFile = $("#bgFile");
 const bgAlpha = $("#bgAlpha");
 const bgScale = $("#bgScale");
+const bgScaleRange = $("#bgScaleRange");
+const bgRotateLeft = $("#bgRotateLeft");
+const bgRotateRight = $("#bgRotateRight");
 const bgReset = $("#bgReset");
 
 const btnRedraw = $("#btnRedraw");
@@ -105,6 +108,7 @@ function initUI() {
 
   bgAlpha.value = state.bg.alpha;
   bgScale.value = Math.round(state.bg.scale * 100);
+  bgScaleRange.value = Math.round(state.bg.scale * 100);
 
   setCanvasSizeFromPage();
   redraw();
@@ -141,9 +145,9 @@ function redraw() {
     ctx.globalAlpha = state.bg.alpha;
     const imgW = bgImage.width * state.bg.scale;
     const imgH = bgImage.height * state.bg.scale;
-    const x = state.bg.x - imgW/2 + w/2;
-    const y = state.bg.y - imgH/2 + h/2;
-    ctx.drawImage(bgImage, x, y, imgW, imgH);
+    ctx.translate(w/2 + state.bg.x, h/2 + state.bg.y);
+    ctx.rotate(state.bg.rotation);
+    ctx.drawImage(bgImage, -imgW/2, -imgH/2, imgW, imgH);
     ctx.restore();
   }
 
@@ -161,11 +165,17 @@ function redraw() {
   ctx.strokeRect(inner.x, inner.y, inner.w, inner.h);
   ctx.restore();
 
+  // Clip drawing to inner area so grid doesn't bleed into margins
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(inner.x, inner.y, inner.w, inner.h);
+  ctx.clip();
   if (state.gridType === "hex") {
     drawHexGrid(inner);
   } else if (state.gridType === "square") {
     drawSquareGrid(inner);
   }
+  ctx.restore();
 }
 
 function drawSquareGrid(inner) {
@@ -263,7 +273,9 @@ bgFile.addEventListener("change", (e) => {
     bgImage.onload = () => {
       // place centered
       state.bg.x = 0; state.bg.y = 0;
-      state.bg.scale = parseInt(bgScale.value, 10) / 100;
+      const v = parseInt(bgScale.value, 10) || 100;
+      state.bg.scale = v / 100;
+      bgScaleRange.value = v;
       saveState();
       redraw();
     };
@@ -273,7 +285,20 @@ bgFile.addEventListener("change", (e) => {
 });
 
 bgAlpha.addEventListener("input", () => { state.bg.alpha = parseFloat(bgAlpha.value); saveState(); redraw(); });
-bgScale.addEventListener("input", () => { state.bg.scale = parseInt(bgScale.value, 10) / 100; saveState(); redraw(); });
+bgScaleRange.addEventListener("input", () => {
+  const v = clampNum(bgScaleRange.value, 10, 400);
+  state.bg.scale = v / 100;
+  bgScale.value = v;
+  saveState(); redraw();
+});
+bgScale.addEventListener("input", () => {
+  const v = clampNum(bgScale.value, 10, 400);
+  state.bg.scale = v / 100;
+  bgScaleRange.value = v;
+  saveState(); redraw();
+});
+bgRotateLeft.addEventListener("click", () => { state.bg.rotation -= Math.PI / 2; saveState(); redraw(); });
+bgRotateRight.addEventListener("click", () => { state.bg.rotation += Math.PI / 2; saveState(); redraw(); });
 bgReset.addEventListener("click", () => { state.bg.x = 0; state.bg.y = 0; saveState(); redraw(); });
 
 // Drag background with mouse
@@ -297,15 +322,47 @@ board.addEventListener("mousemove", (e) => {
 board.addEventListener("mouseup", () => dragging = false);
 board.addEventListener("mouseleave", () => dragging = false);
 
+board.addEventListener("wheel", (e) => {
+  if (!bgImage || !state.bg.src) return;
+  e.preventDefault();
+  const factor = e.deltaY < 0 ? 1.05 : 0.95;
+  state.bg.scale = Math.max(0.1, Math.min(4, state.bg.scale * factor));
+  const v = Math.round(state.bg.scale * 100);
+  bgScaleRange.value = v;
+  bgScale.value = v;
+  saveState(); redraw();
+}, { passive: false });
+
 // Controls bindings
 pagePreset.addEventListener("change", () => {
   state.pagePreset = pagePreset.value;
+  if (state.pagePreset !== "Custom") {
+    const { wmm, hmm } = getPageSizeMM();
+    state.pageWmm = wmm;
+    state.pageHmm = hmm;
+    pageWmm.value = wmm;
+    pageHmm.value = hmm;
+  }
   customSizeRow.hidden = state.pagePreset !== "Custom";
   setCanvasSizeFromPage();
   saveState(); redraw();
 });
-pageWmm.addEventListener("input", () => { state.pageWmm = clampNum(pageWmm.value, 10, 2000); setCanvasSizeFromPage(); saveState(); redraw(); });
-pageHmm.addEventListener("input", () => { state.pageHmm = clampNum(pageHmm.value, 10, 2000); setCanvasSizeFromPage(); saveState(); redraw(); });
+pageWmm.addEventListener("input", () => {
+  state.pagePreset = "Custom";
+  pagePreset.value = "Custom";
+  customSizeRow.hidden = false;
+  state.pageWmm = clampNum(pageWmm.value, 10, 2000);
+  setCanvasSizeFromPage();
+  saveState(); redraw();
+});
+pageHmm.addEventListener("input", () => {
+  state.pagePreset = "Custom";
+  pagePreset.value = "Custom";
+  customSizeRow.hidden = false;
+  state.pageHmm = clampNum(pageHmm.value, 10, 2000);
+  setCanvasSizeFromPage();
+  saveState(); redraw();
+});
 
 // Margin logic: single control mirrors into all; Advanced reveals per-side
 toggleMargins.addEventListener("click", () => {
@@ -415,4 +472,4 @@ function clampNum(v, min, max) {
 
 // Boot
 initUI();
-showPanel("grid");
+showPanel("workflow");

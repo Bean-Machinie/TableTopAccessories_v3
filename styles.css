@@ -79,15 +79,20 @@ body {
 .panel.hidden { display: none; }
 
 h3 { margin: 0.2rem 0 0.8rem 0; }
+h4 { margin: 0.6rem 0 0.4rem 0; }
 .row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
 .row.two { grid-template-columns: 1fr 1fr; }
+.row.three { grid-template-columns: 1fr auto auto; }
 .row.four { grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
-.row input[type="number"], .row select, .row input[type="text"] {
+.row input[type="number"], .row select, .row input[type="text"],
+.row > button {
   width: 100%;
   background: var(--elev); border: 1px solid var(--border); color: var(--text);
   padding: 0.5rem; border-radius: 0.5rem;
 }
 .row input[type="range"] { width: 100%; }
+.scale-control { display: grid; grid-template-columns: 1fr 60px; align-items: center; gap: 0.4rem; }
+.scale-control span { grid-column: 1 / -1; }
 .row span { color: var(--muted); font-size: 0.9rem; }
 .divider { height: 1px; background: var(--border); margin: 0.8rem 0; }
 button {
