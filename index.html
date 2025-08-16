@@ -10,20 +10,13 @@
   <header class="topbar">
     <div class="brand">Table Top Accessories</div>
     <div class="spacer"></div>
-    <div class="top-actions">
-      <button id="btnNew">New</button>
-      <button id="btnSave">Save</button>
-      <button id="btnLoad">Load</button>
-      <button id="btnExportPNG">Export PNG</button>
-      <button id="btnHelp">Help</button>
-    </div>
   </header>
 
   <main class="layout">
     <aside class="sidebar">
       <h2>Tools</h2>
       <nav>
-        <button class="nav-btn active" data-panel="workflow">Workflow</button>
+        <button class="nav-btn active" data-panel="workflow">Grid &amp; Map Tool</button>
       </nav>
     </aside>
 
@@ -31,13 +24,13 @@
       <div class="canvas-wrap">
         <canvas id="board" width="1123" height="794" aria-label="Canvas Workspace"></canvas>
       </div>
-      <div id="breadcrumbs" class="breadcrumbs">Home ▸ <span id="crumb">Workflow</span></div>
+      <div id="breadcrumbs" class="breadcrumbs">Home ▸ <span id="crumb">Grid &amp; Map Tool</span></div>
     </section>
 
     <aside class="props">
       <!-- Unified Workflow Panel -->
       <div class="panel" id="panel-workflow">
-        <h3>Workflow</h3>
+        <h3>Grid &amp; Map Tool</h3>
         <h4>Grid</h4>
         <label class="row">
           <span>Page Size</span>
@@ -84,6 +77,10 @@
             <option value="none">None</option>
           </select>
         </label>
+        <label class="row">
+          <span>Grid Line Color</span>
+          <input type="color" id="gridColor" value="#000000">
+        </label>
 
         <div id="hexControls">
           <div class="row two">
@@ -129,13 +126,16 @@
         </div>
 
         <div class="divider"></div>
-        <button id="btnRedraw">Redraw</button>
-
-        <div class="divider"></div>
 
         <h4>Background</h4>
         <div class="row">
           <input type="file" id="bgFile" accept="image/*">
+        </div>
+        <div class="row">
+          <label>
+            <span>Color</span>
+            <input type="color" id="bgColor" value="#ffffff">
+          </label>
         </div>
         <div class="row two">
           <label>
@@ -154,6 +154,21 @@
         </div>
         <p class="hint">Tip: Drag the image on the canvas to reposition it. Use the mouse wheel to scale.</p>
         <button id="bgReset">Center Image</button>
+
+        <div class="divider"></div>
+
+        <h4>Export</h4>
+        <div class="row two">
+          <label>
+            <span>Format</span>
+            <select id="exportFormat">
+              <option value="png">PNG</option>
+              <option value="jpeg">JPEG</option>
+              <option value="pdf">PDF</option>
+            </select>
+          </label>
+          <button id="btnExport">Export</button>
+        </div>
 
         <div class="divider"></div>
 
@@ -176,6 +191,7 @@
     <span>Built for quick, intuitive tabletop design. Drag, tweak, print.</span>
   </footer>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
