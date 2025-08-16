@@ -14,12 +14,16 @@ const defaultState = {
   marginAll: 10,
   margins: { top: 10, right: 10, bottom: 10, left: 10 },
   gridType: "hex",
+  gridColor: "#000000",
   hex: { sizeMm: 10, orient: "pointy", lineWidth: 0.8, alpha: 0.6 },
   square: { sizeMm: 10, lineWidth: 0.8, alpha: 0.6 },
-  bg: { src: null, x: 0, y: 0, scale: 1.0, alpha: 0.8, rotation: 0 },
+  bg: { src: null, x: 0, y: 0, scale: 1.0, alpha: 0.8, rotation: 0, color: "#ffffff" },
 };
 
 let state = loadState();
+state.hex = { ...defaultState.hex, ...state.hex };
+state.square = { ...defaultState.square, ...state.square };
+state.bg = { ...defaultState.bg, ...state.bg };
 
 // UI refs
 const board = $("#board");
@@ -47,6 +51,7 @@ const lineAlpha = $("#lineAlpha");
 const sqSize = $("#sqSize");
 const sqLineWidth = $("#sqLineWidth");
 const sqLineAlpha = $("#sqLineAlpha");
+const gridColor = $("#gridColor");
 
 const bgFile = $("#bgFile");
 const bgAlpha = $("#bgAlpha");
@@ -55,13 +60,11 @@ const bgScaleRange = $("#bgScaleRange");
 const bgRotateLeft = $("#bgRotateLeft");
 const bgRotateRight = $("#bgRotateRight");
 const bgReset = $("#bgReset");
+const bgColor = $("#bgColor");
 
-const btnRedraw = $("#btnRedraw");
-const btnSave = $("#btnSave");
-const btnLoad = $("#btnLoad");
-const btnNew = $("#btnNew");
-const btnExportPNG = $("#btnExportPNG");
 const projectName = $("#projectName");
+const exportFormat = $("#exportFormat");
+const btnExport = $("#btnExport");
 
 const crumbs = $("#crumb");
 
@@ -78,7 +81,7 @@ document.querySelectorAll(".nav-btn").forEach(btn => {
 function showPanel(panel) {
   document.querySelectorAll(".panel").forEach(p => p.classList.add("hidden"));
   $("#panel-" + panel).classList.remove("hidden");
-  crumbs.textContent = panel.charAt(0).toUpperCase() + panel.slice(1);
+  crumbs.textContent = panel === "workflow" ? "Grid & Map Tool" : panel.charAt(0).toUpperCase() + panel.slice(1);
 }
 
 // Initialize UI from state
@@ -105,10 +108,12 @@ function initUI() {
   sqSize.value = state.square.sizeMm;
   sqLineWidth.value = state.square.lineWidth;
   sqLineAlpha.value = state.square.alpha;
+  gridColor.value = state.gridColor;
 
   bgAlpha.value = state.bg.alpha;
   bgScale.value = Math.round(state.bg.scale * 100);
   bgScaleRange.value = Math.round(state.bg.scale * 100);
+  bgColor.value = state.bg.color;
 
   setCanvasSizeFromPage();
   redraw();
@@ -136,7 +141,7 @@ function getPageSizeMM() {
 function redraw() {
   const w = board.width, h = board.height;
   // Clear
-  ctx.fillStyle = "#ffffff";
+  ctx.fillStyle = state.bg.color || "#ffffff";
   ctx.fillRect(0, 0, w, h);
 
   // Background image
@@ -182,7 +187,7 @@ function drawSquareGrid(inner) {
   const sizePx = mm2px(state.square.sizeMm);
   ctx.save();
   ctx.globalAlpha = state.square.alpha;
-  ctx.strokeStyle = "#000000";
+  ctx.strokeStyle = state.gridColor;
   ctx.lineWidth = state.square.lineWidth;
   // Vertical lines
   for (let x = inner.x; x <= inner.x + inner.w + 0.5; x += sizePx) {
@@ -206,7 +211,7 @@ function drawHexGrid(inner) {
   const orient = state.hex.orient; // 'pointy' or 'flat'
   ctx.save();
   ctx.globalAlpha = state.hex.alpha;
-  ctx.strokeStyle = "#000000";
+  ctx.strokeStyle = state.gridColor;
   ctx.lineWidth = state.hex.lineWidth;
 
   const w = inner.w, h = inner.h, ox = inner.x, oy = inner.y;
@@ -300,6 +305,7 @@ bgScale.addEventListener("input", () => {
 bgRotateLeft.addEventListener("click", () => { state.bg.rotation -= Math.PI / 2; saveState(); redraw(); });
 bgRotateRight.addEventListener("click", () => { state.bg.rotation += Math.PI / 2; saveState(); redraw(); });
 bgReset.addEventListener("click", () => { state.bg.x = 0; state.bg.y = 0; saveState(); redraw(); });
+bgColor.addEventListener("input", () => { state.bg.color = bgColor.value; saveState(); redraw(); });
 
 // Drag background with mouse
 let dragging = false;
@@ -408,36 +414,28 @@ lineAlpha.addEventListener("input", () => { state.hex.alpha = parseFloat(lineAlp
 sqSize.addEventListener("input", () => { state.square.sizeMm = clampNum(sqSize.value, 2, 100); saveState(); redraw(); });
 sqLineWidth.addEventListener("input", () => { state.square.lineWidth = Math.max(0.1, parseFloat(sqLineWidth.value)); saveState(); redraw(); });
 sqLineAlpha.addEventListener("input", () => { state.square.alpha = parseFloat(sqLineAlpha.value); saveState(); redraw(); });
-
-btnRedraw.addEventListener("click", redraw);
+gridColor.addEventListener("input", () => { state.gridColor = gridColor.value; saveState(); redraw(); });
 
 // Project/session
 projectName.addEventListener("input", () => { state.projectName = projectName.value; saveState(); });
-btnSave.addEventListener("click", () => {
-  const payload = JSON.stringify(state);
-  localStorage.setItem(STATE_KEY, payload);
-  alert("Saved to browser storage.");
-});
-btnLoad.addEventListener("click", () => {
-  state = loadState(true);
-  initUI();
-  alert("Loaded last saved state from browser storage.");
-});
-btnNew.addEventListener("click", () => {
-  if (confirm("Start a new blank project? This keeps your current save in the browser.")) {
-    state = structuredClone(defaultState);
-    initUI();
+btnExport.addEventListener("click", () => {
+  redraw();
+  const fmt = exportFormat.value;
+  if (fmt === "png" || fmt === "jpeg") {
+    const link = document.createElement("a");
+    link.download = (state.projectName || "tabletop") + "." + fmt;
+    link.href = board.toDataURL("image/" + fmt);
+    link.click();
+  } else if (fmt === "pdf" && window.jspdf) {
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({
+      orientation: board.width > board.height ? "landscape" : "portrait",
+      unit: "px",
+      format: [board.width, board.height]
+    });
+    pdf.addImage(board.toDataURL("image/png"), "PNG", 0, 0, board.width, board.height);
+    pdf.save((state.projectName || "tabletop") + ".pdf");
   }
-});
-btnExportPNG.addEventListener("click", () => {
-  redraw(); // ensure current
-  const link = document.createElement("a");
-  link.download = (state.projectName || "tabletop") + ".png";
-  link.href = board.toDataURL("image/png");
-  link.click();
-});
-$("#btnHelp").addEventListener("click", () => {
-  alert("Quick tips:\n• Use Grid Designer to pick page, margins, and grid.\n• Switch to Background to upload, drag, and scale an image.\n• Autosave keeps your work here; use Save/Load to manage it.\n• Export PNG for quick print.");
 });
 $("#btnClear").addEventListener("click", () => {
   if (confirm("Clear all local data for this app?")) {
